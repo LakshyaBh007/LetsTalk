@@ -1,25 +1,60 @@
 import {
-  StyleSheet,
   Text,
   View,
   TextInput,
   KeyboardAvoidingView,
   Pressable,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { SERVER_URL } from "../api/assets";
-
+import { connectSocket } from "../socket";
+import styles from "../styles";
+import * as ImagePicker from "expo-image-picker";
 
 const RegisterScreen = () => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState(null);
   const navigation = useNavigation();
-  const handleRegister = () => {
+  const validateEmail = (email) => {
+    const emailRegex = /^[\w-.]+@[\w-]+\.[a-z]{2,}$/i;
+    return emailRegex.test(email);
+  };
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+  const handleRegister = async () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Name is required!");
+      return;
+    }
+    if (!email.trim() || !validateEmail(email)) {
+      Alert.alert("Error", "Please enter a valid email address!");
+      return;
+    }
+    if (!password.trim() || password.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters long!");
+      return;
+    }
+    if (!image) {
+      Alert.alert("Error", "Please upload a profile picture!");
+      return;
+    }
+
     const user = {
       name,
       email,
@@ -27,37 +62,34 @@ const RegisterScreen = () => {
       image,
     };
 
-    axios
-      .post(`${SERVER_URL}/register`, user)
-      .then((response) => {
-        console.log(response);
-        Alert.alert(
-          "Registration successful",
-          "You have been registered Successfully"
-        );
-        setName("");
-        setEmail("");
-        setPassword("");
-        setImage("");
-        navigation.navigate("Login");
-      })
-      .catch((error) => {
-        Alert.alert(
-          "Registration Error",
-          "An error occurred while registering"
-        );
-        console.log("registration failed", error);
+    try {
+      const response = await axios.post(`${SERVER_URL}/register`, user);
+      const registeredUser = response.data.user;
+
+      Alert.alert(
+        "Registration successful",
+        "You have been registered successfully"
+      );
+
+      setName("");
+      setEmail("");
+      setPassword("");
+      setImage(null);
+
+      const socket = connectSocket(registeredUser.id);
+      socket.emit("register_user", {
+        userID: registeredUser.id,
       });
+
+      navigation.navigate("Login");
+    } catch (error) {
+      console.error("Registration failed:", error);
+      Alert.alert("Registration Error", "An error occurred while registering");
+    }
   };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "white",
-        padding: 10,
-        alignItems: "center",
-      }}
-    >
+    <View style={styles.container}>
       <KeyboardAvoidingView>
         <View
           style={{
@@ -66,116 +98,86 @@ const RegisterScreen = () => {
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "#4A55A2", fontSize: 17, fontWeight: "600" }}>
-            Register
-          </Text>
+          <Text style={{ ...styles.text, fontSize: 25 }}>LetsTalk</Text>
 
-          <Text style={{ fontSize: 17, fontWeight: "600", marginTop: 15 }}>
-            Register To your Account
+          <Text style={{ ...styles.text, fontSize: 20, marginTop: 15 }}>
+            Register to your Account
           </Text>
         </View>
 
-        <View style={{ marginTop: 50 }}>
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ fontSize: 18, fontWeight: "600", color: "gray" }}>
-              Name
-            </Text>
+        <View
+          style={{
+            alignItems: "center",
+            marginTop: 40,
+          }}
+        >
+          <TouchableOpacity onPress={pickImage}>
+            <View
+              style={{
+                height: 120,
+                width: 120,
+                borderRadius: 60,
+                backgroundColor: "darkgray",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              {image ? (
+                <Image
+                  source={{ uri: image }}
+                  style={{ height: 120, width: 120 }}
+                />
+              ) : (
+                <Text style={{ ...styles.text, fontSize: 15, color: "#555" }}>
+                  Upload Photo
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: 5 }}>
+            <Text style={styles.text}>Name</Text>
 
             <TextInput
               value={name}
               onChangeText={(text) => setName(text)}
-              style={{
-                fontSize: email ? 18 : 18,
-                borderBottomColor: "gray",
-                borderBottomWidth: 1,
-                marginVertical: 10,
-                width: 300,
-              }}
-              placeholderTextColor={"black"}
+              style={styles.textInput}
+              placeholderTextColor={"gray"}
               placeholder="Enter your name"
             />
           </View>
 
           <View>
-            <Text style={{ fontSize: 18, fontWeight: "600", color: "gray" }}>
-              Email
-            </Text>
+            <Text style={styles.text}>Email</Text>
 
             <TextInput
               value={email}
               onChangeText={(text) => setEmail(text)}
-              style={{
-                fontSize: email ? 18 : 18,
-                borderBottomColor: "gray",
-                borderBottomWidth: 1,
-                marginVertical: 10,
-                width: 300,
-              }}
-              placeholderTextColor={"black"}
-              placeholder="enter Your Email"
+              style={styles.textInput}
+              placeholderTextColor={"gray"}
+              placeholder="Enter your email"
             />
           </View>
 
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ fontSize: 18, fontWeight: "600", color: "gray" }}>
-              Password
-            </Text>
+          <View style={{ marginTop: 5 }}>
+            <Text style={styles.text}>Password</Text>
 
             <TextInput
               value={password}
               onChangeText={(text) => setPassword(text)}
               secureTextEntry={true}
-              style={{
-                fontSize: email ? 18 : 18,
-                borderBottomColor: "gray",
-                borderBottomWidth: 1,
-                marginVertical: 10,
-                width: 300,
-              }}
-              placeholderTextColor={"black"}
-              placeholder="Passowrd"
+              style={styles.textInput}
+              placeholderTextColor={"gray"}
+              placeholder="Enter your password"
             />
           </View>
 
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ fontSize: 18, fontWeight: "600", color: "gray" }}>
-              Image
-            </Text>
-
-            <TextInput
-              value={image}
-              onChangeText={(text) => setImage(text)}
-              style={{
-                fontSize: email ? 18 : 18,
-                borderBottomColor: "gray",
-                borderBottomWidth: 1,
-                marginVertical: 10,
-                width: 300,
-              }}
-              placeholderTextColor={"black"}
-              placeholder="Image"
-            />
-          </View>
-
-          <Pressable
-            onPress={handleRegister}
-            style={{
-              width: 200,
-              backgroundColor: "#4A55A2",
-              padding: 15,
-              marginTop: 50,
-              marginLeft: "auto",
-              marginRight: "auto",
-              borderRadius: 6,
-            }}
-          >
+          <Pressable onPress={handleRegister} style={styles.button}>
             <Text
-              style={{
-                color: "white",
-                fontSize: 16,
-                fontWeight: "bold",
-                textAlign: "center",
-              }}
+              style={{ ...styles.text, color: "white", textAlign: "center" }}
             >
               Register
             </Text>
@@ -185,7 +187,7 @@ const RegisterScreen = () => {
             onPress={() => navigation.goBack()}
             style={{ marginTop: 15 }}
           >
-            <Text style={{ textAlign: "center", color: "gray", fontSize: 16 }}>
+            <Text style={{ ...styles.text, textAlign: "center", fontSize: 16 }}>
               Already Have an account? Sign in
             </Text>
           </Pressable>
@@ -196,5 +198,3 @@ const RegisterScreen = () => {
 };
 
 export default RegisterScreen;
-
-const styles = StyleSheet.create({});

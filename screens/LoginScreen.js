@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   View,
+  Alert
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -48,6 +49,19 @@ const LoginScreen = () => {
   //   }, []);
 
   const handleLogin = () => {
+    const validateEmail = (email) => {
+      const emailRegex = /^[\w-.]+@[\w-]+\.[a-z]{2,}$/i;
+      return emailRegex.test(email);
+    };
+
+    if (!email.trim() || !validateEmail(email)) {
+      Alert.alert("Error", "Please enter a valid email address!");
+      return;
+    }
+    // if (!password.trim() || password.length < 8) {
+    //   Alert.alert("Error", "Password must be at least 8 characters long!");
+    //   return;
+    // }
     const user = {
       email,
       password,

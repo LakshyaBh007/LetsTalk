@@ -13,7 +13,12 @@ const Message = require("./models/message");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: "exp://192.1.160.55:8081",
+    credentials: true
+  }
+});
 
 const port = 8000;
 
@@ -49,11 +54,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", async (data) => {
-    const { senderId, recipientId, messageType, messageText } = data;
+    console.log(data)
+    const { senderId, recepientId, messageType, messageText } = data;
+
+    console.log(recepientId);
 
     const newMessage = new Message({
       senderId,
-      recipientId,
+      recepientId,
       messageType,
       message: messageText,
       timestamp: new Date(),
@@ -62,8 +70,9 @@ io.on("connection", (socket) => {
     await newMessage.save();
 
     // Emit message to recipient if connected
-    if (users[recipientId]) {
-      io.to(users[recipientId]).emit("newMessage", data);
+    if (users[recepientId]) {
+      console.log("hi")
+      io.to(users[recepientId]).emit("newMessage", data);
     }
 
     // Optionally emit to the sender
@@ -99,17 +108,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.post("/register", (req, res) => {
-  console.log(req.body);
-
-  // create a new User object
   const newUser = new User(req.body);
-
-  // save the user to the database
   newUser
     .save()
-    .then(() => {
-      console.log("ho", newUser);
-      res.status(200).json({ message: "User registered successfully" });
+    .then(({ _id }) => {
+      res.status(200).json({ _id, message: "User registered successfully" });
     })
     .catch((err) => {
       console.log("Error registering user", err);

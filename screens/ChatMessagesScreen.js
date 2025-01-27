@@ -24,8 +24,17 @@ import EmojiSelector from "react-native-emoji-selector";
 import { UserType } from "../UserContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
 import { SERVER_URL } from "../api/assets";
 import io from "socket.io-client";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const ChatMessagesScreen = () => {
   const [showEmojiSelector, setShowEmojiSelector] = useState(false);
@@ -44,45 +53,87 @@ const ChatMessagesScreen = () => {
   const socket = useRef(io(SERVER_URL)).current;
 
   useEffect(() => {
+    const requestUserPermission = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      console.log("User authorization status:", status);
+    };
+
+    requestUserPermission();
+
+    const notificationSubscription =
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log("Notification received:", notification);
+        const newMessage = notification.request.content.data.newMessage;
+        if (newMessage) {
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        }
+      });
+
+    return () => {
+      notificationSubscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     socket.on("newMessage", (newMessage) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: `New message from ${newMessage.senderName || "Unknown"}`,
+          body: newMessage.messageText || "You received a new message.",
+          data: { newMessage },
+        },
+        trigger: null, // Trigger immediately
+      });
       scrollToBottom(); // Scroll to bottom when new message arrives
     });
 
-    socket.emit("joinRoom", { senderId: userId, recepientId });
+    //socket.emit("register", userId);
 
     return () => {
       socket.off("newMessage"); // Clean up listener on component unmount
     };
-  }, [userId, recepientId]);
+  }, [userId]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, []);
+  // Send a message
+  // const sendMessage = () => {
+  //   const messageData = {
+  //     senderId: userId,
+  //     recepientId,
+  //     messageType: "text",
+  //     messageText: message,
+  //   };
 
-//   const scrollToBottom = () => {useEffect(() => {
-//     socket.on("newMessage", (newMessage) => {
-//       setMessages((prevMessages) => [...prevMessages, newMessage]);
-//       scrollToBottom(); // Scroll to bottom when new message arrives
-//     });
+  //   socket.emit("sendMessage", messageData); // Emit the message to the backend
+  //   setMessage(""); // Clear the input field
+  // };
 
-//     socket.emit("joinRoom", { senderId: userId, recepientId });
+  // useEffect(() => {
+  //   scrollToBottom();
+  // }, []);
 
-//     return () => {
-//       socket.off("newMessage"); // Clean up listener on component unmount
-//     };
-//   }, [userId, recepientId]);
+  //   const scrollToBottom = () => {useEffect(() => {
+  //     socket.on("newMessage", (newMessage) => {
+  //       setMessages((prevMessages) => [...prevMessages, newMessage]);
+  //       scrollToBottom(); // Scroll to bottom when new message arrives
+  //     });
 
-//     if (scrollViewRef.current) {
-//       scrollViewRef.current.scrollToEnd({ animated: false });
-//     }
-//   };
-const scrollToBottom = () => {
+  //     socket.emit("joinRoom", { senderId: userId, recepientId });
+
+  //     return () => {
+  //       socket.off("newMessage"); // Clean up listener on component unmount
+  //     };
+  //   }, [userId, recepientId]);
+
+  //     if (scrollViewRef.current) {
+  //       scrollViewRef.current.scrollToEnd({ animated: false });
+  //     }
+  //   };
+  const scrollToBottom = () => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollToEnd({ animated: true });
     }
   };
-
 
   const handleContentSizeChange = () => {
     scrollToBottom();
@@ -101,6 +152,12 @@ const scrollToBottom = () => {
 
       if (response.ok) {
         setMessages(data);
+        // socket.emit("sendMessage", {
+        //   senderId: userId,
+        //   recepientId,
+        //   messageType: "text",
+        //   messageText: message,
+        // });
       } else {
         console.log("error showing messags", response.status.message);
       }
@@ -111,7 +168,7 @@ const scrollToBottom = () => {
 
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [messages]);
 
   useEffect(() => {
     const fetchRecepientData = async () => {
@@ -120,6 +177,7 @@ const scrollToBottom = () => {
 
         const data = await response.json();
         setRecepientData(data);
+        console.log("fsnnnnnnnnnnnnnnnnnnnnnnnnnns", data);
       } catch (error) {
         console.log("error retrieving details", error);
       }
@@ -128,6 +186,7 @@ const scrollToBottom = () => {
     fetchRecepientData();
   }, []);
   const handleSend = async (messageType, imageUri) => {
+    if (!message.trim() && messageType === "text") return;
     try {
       const formData = new FormData();
       formData.append("senderId", userId);
@@ -155,8 +214,14 @@ const scrollToBottom = () => {
         setMessage("");
         setSelectedImage("");
 
-        fetchMessages();
+        fetchMessages(); // commented
       }
+      // socket.emit("sendMessage", {
+      //   senderId: userId,
+      //   recepientId,
+      //   messageType: "text",
+      //   messageText: message,
+      // }); // Emit the message to the backend
     } catch (error) {
       console.log("error in sending the message", error);
     }
@@ -392,7 +457,7 @@ const scrollToBottom = () => {
           paddingVertical: 10,
           borderTopWidth: 1,
           borderTopColor: "#dddddd",
-          marginBottom: showEmojiSelector ? 0 : 25,
+          marginBottom: 25,
         }}
       >
         <Entypo

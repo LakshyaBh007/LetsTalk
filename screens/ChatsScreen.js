@@ -4,6 +4,7 @@ import { UserType } from "../UserContext";
 import { useNavigation } from "@react-navigation/native";
 import UserChat from "../components/UserChat";
 import { SERVER_URL } from "../api/assets";
+import styles from "../styles";
 
 
 const ChatsScreen = () => {
@@ -11,6 +12,19 @@ const ChatsScreen = () => {
   const { userId, setUserId } = useContext(UserType);
   const navigation = useNavigation();
   useEffect(() => {
+    navigation.setOptions({
+      title: "Chats",
+      headerStyle: {
+        backgroundColor: "#202123",
+      },
+      headerTitleStyle: {
+        fontWeight: "bold",
+        fontSize: 20,
+        color: "#fff",
+      },
+      headerTintColor: "#fff",
+      headerTitleAlign: "center",
+    });
     const acceptedFriendsList = async () => {
       try {
         const response = await fetch(
@@ -30,6 +44,7 @@ const ChatsScreen = () => {
   }, []);
   console.log("friends",acceptedFriends)
   return (
+    <View style={{flex:1, backgroundColor:"#3D3C3A"}}>
     <ScrollView showsVerticalScrollIndicator={false}>
       <Pressable>
           {acceptedFriends.map((item,index) => (
@@ -37,9 +52,8 @@ const ChatsScreen = () => {
           ))}
       </Pressable>
     </ScrollView>
+    </View>
   );
 };
 
 export default ChatsScreen;
-
-const styles = StyleSheet.create({});

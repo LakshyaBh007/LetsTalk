@@ -6,6 +6,7 @@ import {
   Pressable,
   Alert,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -21,6 +22,7 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState("");
   const [image, setImage] = useState(null);
   const navigation = useNavigation();
+
   const validateEmail = (email) => {
     const emailRegex = /^[\w-.]+@[\w-]+\.[a-z]{2,}$/i;
     return emailRegex.test(email);
@@ -28,7 +30,7 @@ const RegisterScreen = () => {
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [1, 1],
       quality: 0.5,
     });
@@ -64,7 +66,7 @@ const RegisterScreen = () => {
 
     try {
       const response = await axios.post(`${SERVER_URL}/register`, user);
-      const registeredUser = response.data.user;
+      const registeredUser = response.data._id;
 
       Alert.alert(
         "Registration successful",
@@ -76,9 +78,9 @@ const RegisterScreen = () => {
       setPassword("");
       setImage(null);
 
-      const socket = connectSocket(registeredUser.id);
+      const socket = connectSocket(registeredUser);
       socket.emit("register_user", {
-        userID: registeredUser.id,
+        userID: registeredUser,
       });
 
       navigation.navigate("Login");

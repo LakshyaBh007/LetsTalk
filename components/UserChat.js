@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { UserType } from "../UserContext";
 import { SERVER_URL } from "../api/assets";
+import styles from "../styles";
 
 const UserChat = ({ item }) => {
   const { userId, setUserId } = useContext(UserType);
@@ -88,5 +89,3 @@ const UserChat = ({ item }) => {
 };
 
 export default UserChat;
-
-const styles = StyleSheet.create({});

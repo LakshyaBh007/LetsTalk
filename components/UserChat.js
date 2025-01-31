@@ -57,7 +57,7 @@ const UserChat = ({ item }) => {
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        borderWidth: 0.7,
+        borderWidth: 1,
         borderColor: "#D0D0D0",
         borderTopWidth: 0,
         borderLeftWidth: 0,
@@ -71,16 +71,16 @@ const UserChat = ({ item }) => {
       />
 
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, fontWeight: "500" }}>{item?.name}</Text>
+        <Text style={{ ...styles.text, fontSize: 16, color:"white" }}>{item?.name}</Text>
         {lastMessage && (
-          <Text style={{ marginTop: 3, color: "gray", fontWeight: "500" }}>
+          <Text style={{ ...styles.text, fontSize: 14,marginTop: 3, fontWeight: "500" }}>
             {lastMessage?.message}
           </Text>
         )}
       </View>
-
+ 
       <View>
-        <Text style={{ fontSize: 11, fontWeight: "400", color: "#585858" }}>
+        <Text style={{ fontSize: 11, fontWeight: "400", color: "white" }}>
           {lastMessage && formatTime(lastMessage?.timeStamp)}
         </Text>
       </View>

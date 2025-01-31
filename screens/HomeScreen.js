@@ -25,9 +25,11 @@ const HomeScreen = () => {
         <Text style={{ ...styles.text, color: "white" }}>LetsTalk</Text>
       ),
       headerRight: () => (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8,  pointerEvents: "box-none"}}>
           <Ionicons
-            onPress={() => navigation.navigate("Chats")}
+            onPress={() => {
+              console.log("Chat icon pressed")
+              navigation.navigate("Chats")}}
             name="chatbox-ellipses-outline"
             size={24}
             color="white"

@@ -9,7 +9,7 @@ const User = ({ item }) => {
   const [requestSent, setRequestSent] = useState(false);
   const [friendRequests, setFriendRequests] = useState([]);
   const [userFriends, setUserFriends] = useState([]);
-  
+
   useEffect(() => {
     const fetchFriendRequests = async () => {
       try {
@@ -68,76 +68,97 @@ const User = ({ item }) => {
     }
   };
   console.log("friend requests sent", friendRequests);
-  console.log("user friends", item.image);
+  console.log("user friends", item);
   return (
-      <View
+    <View
+      style={{
+        borderWidth: 1.2,
+        //borderColor: "#D0D0D0",
+        borderTopWidth: 0,
+        borderLeftWidth: 0,
+        borderRightWidth: 0,
+
+        borderColor: "darkgrey",
+        //borderRadius: 10,
+        padding: 2,
+        //marginVertical: 2,
+      }}
+    >
+      <Pressable
         style={{
-          borderWidth: 1,
-          borderColor: "darkgrey",
-          //borderRadius: 10,
-          padding: 10,
-          marginVertical: 2,
+          flexDirection: "row",
+          alignItems: "center",
+          marginVertical: 10,
         }}
       >
-    <Pressable
-      style={{ flexDirection: "row", alignItems: "center", marginVertical: 10 }}
-    >
-      <View>
-        <Image
-          style={{
-            width: 50,
-            height: 50,
-            borderRadius: 25,
-            resizeMode: "cover",
-          }}
-          source={{ uri: item.image }}
-        />
-      </View>
+        <View>
+          <Image
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              resizeMode: "cover",
+            }}
+            source={{ uri: item.image }}
+          />
+        </View>
 
-      <View style={{ marginLeft: 12, flex: 1 }}>
-        <Text style={{...styles.text, fontSize: 18, color:"white" }}>{item?.name}</Text>
-        <Text style={{ ...styles.text, fontSize: 15, marginTop: 4, color:"white" }}>{item?.email}</Text>
-      </View>     
-      {userFriends.includes(item._id) ? (
-        <Pressable
-          style={{
-            backgroundColor: "#08A04B",
-            padding: 10,
-            width: 105,
-            borderRadius: 6,
-          }}
-        >
-          <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
-        </Pressable>
-      ) : requestSent || friendRequests.some((friend) => friend._id === item._id) ? (
-        <Pressable
-          style={{
-            backgroundColor: "#3C565B",
-            padding: 10,
-            width: 105,
-            borderRadius: 6,
-          }}
-        >
-          <Text style={{ textAlign: "center", color: "white", fontSize: 14 }}>
-            Request Sent
+        <View style={{ marginLeft: 12, flex: 1 }}>
+          <Text style={{ ...styles.text, fontSize: 16, color: "white" }}>
+            {item?.name}
           </Text>
-        </Pressable>
-      ) : (
-        <Pressable
-          onPress={() => sendFriendRequest(userId, item._id)}
-          style={{
-            backgroundColor: "#10A37F",
-            padding: 10,
-            borderRadius: 6,
-            width: 105,
-          }}
-        >
-          <Text style={{textAlign: "center", color: "white", fontSize: 14 }}>
-            Add Friend
+          <Text
+            style={{
+              ...styles.text,
+              fontSize: 14,
+              marginTop: 4,
+              color: "white",
+            }}
+          >
+            {item?.email}
           </Text>
-        </Pressable>
-      )}
-    </Pressable>
+        </View>
+        {userFriends.includes(item._id) ? (
+          <Pressable
+            style={{
+              backgroundColor: "#08A04B",
+              padding: 10,
+              width: 105,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ textAlign: "center", color: "white" }}>Friends</Text>
+          </Pressable>
+        ) : requestSent ||
+          friendRequests.some((friend) => friend._id === item._id) ? (
+          <Pressable
+            style={{
+              backgroundColor: "#3C565B",
+              padding: 10,
+              width: 105,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ textAlign: "center", color: "white", fontSize: 14 }}>
+              Request Sent
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => sendFriendRequest(userId, item._id)}
+            style={{
+              backgroundColor: "#10A37F",
+              padding: 10,
+              borderRadius: 6,
+              width: 105,
+            }}
+          >
+            <Text style={{ textAlign: "center", color: "white", fontSize: 14 }}>
+              Add Friend
+            </Text>
+          </Pressable>
+        )}
+      </Pressable>
     </View>
   );
 };

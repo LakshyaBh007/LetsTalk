@@ -4,13 +4,31 @@ import axios from "axios";
 import { UserType } from "../UserContext";
 import FriendRequest from "../components/FriendRequest";
 import { SERVER_URL } from "../api/assets";
+import styles from "../styles";
+import { useNavigation } from "@react-navigation/native";
+
 
 const FriendsScreen = () => {
+  const navigation = useNavigation();
   const { userId, setUserId } = useContext(UserType);
   const [friendRequests, setFriendRequests] = useState([]);
   useEffect(() => {
     fetchFriendRequests();
+    navigation.setOptions({
+      title: "Friends",
+      headerStyle: {
+        backgroundColor: "#202123",
+      },
+      headerTitleStyle: {
+        fontWeight: "bold",
+        fontSize: 20,
+        color: "#fff",
+      },
+      headerTintColor: "#fff",
+      headerTitleAlign: "center",
+    });
   }, []);
+  
 
   const fetchFriendRequests = async () => {
     try {
@@ -34,8 +52,8 @@ const FriendsScreen = () => {
 
   console.log(friendRequests);
   return (
-    <View style={{ padding: 10, marginHorizontal: 12 }}>
-      {friendRequests.length > 0 && <Text>Your Friend Requests!</Text>}
+    <View style={{flex:1, backgroundColor:"#3D3C3A"}}>
+      {friendRequests.length > 0 && <Text style={{...styles.text, alignItems:"center", paddingBottom: 5, color:"white"}}>Your Friend Requests!</Text>}
 
       {friendRequests.map((item, index) => (
         <FriendRequest
@@ -50,5 +68,3 @@ const FriendsScreen = () => {
 };
 
 export default FriendsScreen;
-
-const styles = StyleSheet.create({});

@@ -7,17 +7,19 @@ const socketIo = require("socket.io");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const User = require("./models/user");
 const Message = require("./models/message");
 
 const app = express();
-const server = http.createServer(app);
+const server = http.Server(app);
 const io = socketIo(server, {
   cors: {
     origin: "exp://192.1.160.55:8081",
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 const port = 8000;
@@ -46,7 +48,7 @@ let users = {};
 
 // Socket.IO event handling
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+  //console.log("A user connected:", socket.id);
 
   socket.on("register", (userId) => {
     users[userId] = socket.id;
@@ -54,7 +56,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", async (data) => {
-    console.log(data)
+    console.log(data);
     const { senderId, recepientId, messageType, messageText } = data;
 
     console.log(recepientId);
@@ -71,16 +73,16 @@ io.on("connection", (socket) => {
 
     // Emit message to recipient if connected
     if (users[recepientId]) {
-      console.log("hi")
+      console.log("hi");
       io.to(users[recepientId]).emit("newMessage", data);
     }
 
     // Optionally emit to the sender
-    io.to(users[senderId]).emit("newMessage", data);
+    //io.to(users[senderId]).emit("newMessage", data);
   });
 
   socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
+    //console.log("A user disconnected:", socket.id);
     for (const userId in users) {
       if (users[userId] === socket.id) {
         delete users[userId];
@@ -97,29 +99,57 @@ const createToken = (userId) => {
   return jwt.sign(payload, "Q$r2K6W8n!jCW%Zk", { expiresIn: "1h" });
 };
 
-// Multer setup for file uploads
+const UPLOADS_FOLDER = path.join(__dirname, "uploads");
+if (!fs.existsSync(UPLOADS_FOLDER)) {
+  fs.mkdirSync(UPLOADS_FOLDER, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "files/"),
-  filename: (req, file, cb) => {
+  destination: function (req, file, cb) {
+    cb(null,UPLOADS_FOLDER); // Store images in the 'uploads' folder
+  },
+  filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // Unique filename
   },
 });
+
 const upload = multer({ storage });
 
-app.post("/register", (req, res) => {
-  const newUser = new User(req.body);
-  newUser
-    .save()
-    .then(({ _id }) => {
-      res.status(200).json({ _id, message: "User registered successfully" });
-    })
-    .catch((err) => {
-      console.log("Error registering user", err);
-      res.status(500).json({ message: "Error registering the user!" });
-    });
+// Serve images statically so they can be accessed by frontend
+app.use("/api/uploads", express.static(UPLOADS_FOLDER));
+
+app.post("/upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  const imageUrl = `http://10.0.2.2:8000/api/uploads/${req.file.filename}`; // Corrected path
+  res.status(200).json({ imageUrl });
 });
 
+
+app.post("/register", async (req, res) => {
+  try {
+    const { name, email, password, image } = req.body;
+
+    if (!image) {
+      return res.status(400).json({ message: "Image is required" });
+    }
+
+    const newUser = new User({ name, email, password, image });
+    const savedUser = await newUser.save();
+
+    res.status(200).json({
+      _id: savedUser._id,
+      message: "User registered successfully",
+      image: savedUser.image,
+    });
+  } catch (err) {
+    console.error("Error registering user", err);
+    res.status(500).json({ message: "Error registering the user!" });
+  }
+});
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -253,10 +283,16 @@ app.get("/accepted-friends/:userId", async (req, res) => {
   }
 });
 
+
 //endpoint to post Messages and store it in the backend
 app.post("/messages", upload.single("imageFile"), async (req, res) => {
   try {
     const { senderId, recepientId, messageType, messageText } = req.body;
+    
+    //console.log(req.body,"checkkkk")
+    // if (!req.file) {
+    //   return res.status(400).json({ message: "No file uploaded" });
+    // }
 
     const newMessage = new Message({
       senderId,
@@ -264,7 +300,7 @@ app.post("/messages", upload.single("imageFile"), async (req, res) => {
       messageType,
       message: messageText,
       timestamp: new Date(),
-      imageUrl: messageType === "image" ? req.file.path : null,
+      imageUrl: messageType === "image" ? `http://10.0.2.2:8000/api/uploads/${req.file.filename}` : null,
     });
 
     await newMessage.save();

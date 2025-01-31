@@ -1,5 +1,4 @@
 import {
-  StyleSheet,
   Text,
   View,
   ScrollView,
@@ -27,6 +26,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Notifications from "expo-notifications";
 import { SERVER_URL } from "../api/assets";
 import io from "socket.io-client";
+import styles from "../styles";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -61,6 +61,7 @@ const ChatMessagesScreen = () => {
     requestUserPermission();
 
     const notificationSubscription =
+    //console.log("yeh chal rha hai kya")
       Notifications.addNotificationReceivedListener((notification) => {
         console.log("Notification received:", notification);
         const newMessage = notification.request.content.data.newMessage;
@@ -70,9 +71,9 @@ const ChatMessagesScreen = () => {
       });
 
     return () => {
-      notificationSubscription.remove();
+      //notificationSubscription.remove();
     };
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     socket.on("newMessage", (newMessage) => {
@@ -83,7 +84,7 @@ const ChatMessagesScreen = () => {
           body: newMessage.messageText || "You received a new message.",
           data: { newMessage },
         },
-        trigger: null, // Trigger immediately
+        trigger: null, // Trigger immediately`
       });
       scrollToBottom(); // Scroll to bottom when new message arrives
     });
@@ -186,6 +187,8 @@ const ChatMessagesScreen = () => {
     fetchRecepientData();
   }, []);
   const handleSend = async (messageType, imageUri) => {
+    console.log(messageType, imageUri);
+    
     if (!message.trim() && messageType === "text") return;
     try {
       const formData = new FormData();
@@ -204,11 +207,13 @@ const ChatMessagesScreen = () => {
         formData.append("messageType", "text");
         formData.append("messageText", message);
       }
+      console.log("yaha tak chala?")
 
       const response = await fetch(`${SERVER_URL}/messages`, {
         method: "POST",
         body: formData,
       });
+      console.log(response,"gfdgfsg")
 
       if (response.ok) {
         setMessage("");
@@ -227,17 +232,20 @@ const ChatMessagesScreen = () => {
     }
   };
 
-  console.log("messages", selectedMessages);
+  //console.log("messages", selectedMessages);
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: "",
+      headerStyle: {
+        backgroundColor: "#202123",
+      },
       headerLeft: () => (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Ionicons
             onPress={() => navigation.goBack()}
             name="arrow-back"
             size={24}
-            color="black"
+            color="white"
           />
 
           {selectedMessages.length > 0 ? (
@@ -258,7 +266,7 @@ const ChatMessagesScreen = () => {
                 source={{ uri: recepientData?.image }}
               />
 
-              <Text style={{ marginLeft: 5, fontSize: 15, fontWeight: "bold" }}>
+              <Text style={{ marginLeft: 5, color: "white", fontSize: 17, fontWeight: "bold" }}>
                 {recepientData?.name}
               </Text>
             </View>
@@ -268,14 +276,14 @@ const ChatMessagesScreen = () => {
       headerRight: () =>
         selectedMessages.length > 0 ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Ionicons name="md-arrow-redo-sharp" size={24} color="black" />
-            <Ionicons name="md-arrow-undo" size={24} color="black" />
-            <FontAwesome name="star" size={24} color="black" />
+            <Ionicons name="md-arrow-redo-sharp" size={24} color="white" />
+            <Ionicons name="md-arrow-undo" size={24} color="white" />
+            <FontAwesome name="star" size={24} color="white" />
             <MaterialIcons
               onPress={() => deleteMessages(selectedMessages)}
               name="delete"
               size={24}
-              color="black"
+              color="white"
             />
           </View>
         ) : null,
@@ -317,9 +325,8 @@ const ChatMessagesScreen = () => {
       quality: 1,
     });
 
-    console.log(result);
     if (!result.canceled) {
-      handleSend("image", result.uri);
+      handleSend("image", result.assets[0].uri);
     }
   };
   const handleSelectMessage = (message) => {
@@ -338,7 +345,7 @@ const ChatMessagesScreen = () => {
     }
   };
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
+    <KeyboardAvoidingView style={{flex: 1, backgroundColor: "#3D3C3A" }}>
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={{ flexGrow: 1 }}
@@ -355,7 +362,7 @@ const ChatMessagesScreen = () => {
                   item?.senderId?._id === userId
                     ? {
                         alignSelf: "flex-end",
-                        backgroundColor: "#DCF8C6",
+                        backgroundColor: "#66CDAA",
                         padding: 8,
                         maxWidth: "60%",
                         borderRadius: 7,
@@ -363,7 +370,7 @@ const ChatMessagesScreen = () => {
                       }
                     : {
                         alignSelf: "flex-start",
-                        backgroundColor: "white",
+                        backgroundColor: "#99A3A3",
                         padding: 8,
                         margin: 10,
                         borderRadius: 7,
@@ -375,7 +382,9 @@ const ChatMessagesScreen = () => {
               >
                 <Text
                   style={{
-                    fontSize: 13,
+                    fontSize: 15,
+                    fontWeight: "600",
+                    color: "black",
                     textAlign: isSelected ? "right" : "left",
                   }}
                 >
@@ -384,8 +393,9 @@ const ChatMessagesScreen = () => {
                 <Text
                   style={{
                     textAlign: "right",
-                    fontSize: 9,
-                    color: "gray",
+                    fontSize: 10,
+                    color: "black",
+                    fontWeight: "600",
                     marginTop: 5,
                   }}
                 >
@@ -396,11 +406,10 @@ const ChatMessagesScreen = () => {
           }
 
           if (item.messageType === "image") {
-            const baseUrl =
-              "/home/Lakshya/Desktop/LETSTALK/LetsTalk/api/files/";
-            const imageUrl = item.imageUrl;
-            const filename = imageUrl.split("/").pop();
-            const source = { uri: baseUrl + filename };
+            // const baseUrl =
+            //   "/home/Lakshya/Desktop/LETSTALK/LetsTalk/api/files/";
+            // const imageUrl = item.imageUrl;
+            // const filename = imageUrl.split("/").pop();
             return (
               <Pressable
                 key={index}
@@ -426,8 +435,8 @@ const ChatMessagesScreen = () => {
               >
                 <View>
                   <Image
-                    source={source}
-                    style={{ width: 200, height: 200, borderRadius: 7 }}
+                    source={{uri: item.imageUrl}}
+                    style={{ width: 200, height: 200, borderRadius: 7, marginBottom: 10 }}
                   />
                   <Text
                     style={{
@@ -435,8 +444,9 @@ const ChatMessagesScreen = () => {
                       fontSize: 9,
                       position: "absolute",
                       right: 10,
-                      bottom: 7,
-                      color: "white",
+                      bottom:-5,
+                      fontWeight:500,
+                      color: "black",
                       marginTop: 5,
                     }}
                   >
@@ -457,7 +467,7 @@ const ChatMessagesScreen = () => {
           paddingVertical: 10,
           borderTopWidth: 1,
           borderTopColor: "#dddddd",
-          marginBottom: 25,
+          marginBottom: 5,
         }}
       >
         <Entypo
@@ -478,8 +488,10 @@ const ChatMessagesScreen = () => {
             borderColor: "#dddddd",
             borderRadius: 20,
             paddingHorizontal: 10,
+            color: "white"
           }}
           placeholder="Type Your message..."
+          placeholderTextColor="white"
         />
 
         <View
@@ -498,7 +510,7 @@ const ChatMessagesScreen = () => {
         <Pressable
           onPress={() => handleSend("text")}
           style={{
-            backgroundColor: "#007bff",
+            backgroundColor: "#10A37F",
             paddingVertical: 8,
             paddingHorizontal: 12,
             borderRadius: 20,
@@ -521,5 +533,3 @@ const ChatMessagesScreen = () => {
 };
 
 export default ChatMessagesScreen;
-
-const styles = StyleSheet.create({});

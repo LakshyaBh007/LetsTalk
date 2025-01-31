@@ -28,7 +28,7 @@ const RegisterScreen = () => {
     return emailRegex.test(email);
   };
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+    let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       aspect: [1, 1],
@@ -36,9 +36,34 @@ const RegisterScreen = () => {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      const localUri = result.assets[0].uri;
+      uploadImage(localUri);
     }
   };
+
+  // Upload the image to backend and get URL
+  const uploadImage = async (imageUri) => {
+    const formData = new FormData();
+    formData.append("image", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "profile.jpg",
+    });
+
+    try {
+      const uploadResponse = await axios.post(`${SERVER_URL}/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const imageUrl = uploadResponse.data.imageUrl;
+      //console.log("cvxcvx", imageUrl)
+      setImage(imageUrl); // Save URL for registration
+    } catch (error) {
+      console.error("Upload error:", error);
+      Alert.alert("Upload Error", "Failed to upload image");
+    }
+  };
+
   const handleRegister = async () => {
     if (!name.trim()) {
       Alert.alert("Error", "Name is required!");
@@ -125,11 +150,13 @@ const RegisterScreen = () => {
                 overflow: "hidden",
               }}
             >
+              
               {image ? (
+                
                 <Image
                   source={{ uri: image }}
                   style={{ height: 120, width: 120 }}
-                />
+                  />
               ) : (
                 <Text style={{ ...styles.text, fontSize: 15, color: "#555" }}>
                   Upload Photo
